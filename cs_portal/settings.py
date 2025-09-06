@@ -8,7 +8,7 @@ DEBUG = False
 ALLOWED_HOSTS = ["https://computerclass.onrender.com"]
 
 
-ALLOWED_HOSTS = ["*"]  # Change later to your domain
+
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -88,5 +88,6 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
 
 
