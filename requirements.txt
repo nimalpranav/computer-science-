@@ -1,4 +1,5 @@
 Django
 channels
 channels_redis
+daphne
 gunicorn
