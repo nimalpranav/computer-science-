@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <div class="p-6">
+    <h1 class="text-3xl font-bold">Welcome, {{ user.username }} 👋</h1>
+    <h2 class="mt-6 text-2xl">Available Tasks</h2>
+    <ul class="mt-4">
+      {% for task in tasks %}
+        <li class="bg-white shadow-md p-4 mb-3 rounded-lg">
+          <h3 class="text-xl font-semibold">{{ task.title }}</h3>
+          <p>{{ task.description }}</p>
+          <p class="text-sm text-gray-500">Deadline: {{ task.deadline }}</p>
+        </li>
+      {% empty %}
+        <li>No tasks yet!</li>
+      {% endfor %}
+    </ul>
+  </div>
+</body>
+</html>
