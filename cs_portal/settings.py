@@ -5,6 +5,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "replace-this-with-a-strong-secret-key"
 DEBUG = False
+ALLOWED_HOSTS = ["https://computerclass.onrender.com"]
+
 
 ALLOWED_HOSTS = ["*"]  # Change later to your domain
 
@@ -86,4 +88,5 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
 
