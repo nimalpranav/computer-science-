@@ -1,1 +1,1 @@
-web: daphne -b 0.0.0.0 -p $PORT cs_portal.asgi:application
+daphne -b 0.0.0.0 -p 8000 cs_portal.asgi:application
