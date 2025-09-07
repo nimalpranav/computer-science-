@@ -6,7 +6,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
         self.room_group_name = f"classroom_{self.room_name}"
 
-        # Join room group
+        # Join room
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -15,7 +15,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         print(f"✅ Connected to room {self.room_group_name}")
 
     async def disconnect(self, close_code):
-        # Leave room group
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
@@ -23,20 +22,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
+
         message = data.get("message")
         is_voice = data.get("is_voice", False)
+        voice_blob = data.get("voice_blob")
 
-        # Support voice_blob (Base64) if sent
-        if not message and "voice_blob" in data:
-            message = data["voice_blob"]
-            is_voice = True
+        if voice_blob:  # voice recording
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    "type": "chat_message",
+                    "voice_blob": voice_blob,
+                }
+            )
+            return
 
         if not message:
-            return  # ignore empty messages
+            return
 
         print("📩 Received:", message)
 
-        # Broadcast to group
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -47,14 +52,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
     async def chat_message(self, event):
-        message = event.get("message")
-        if not message:
-            return
+        payload = {}
+        if "message" in event:
+            payload["message"] = event["message"]
+            payload["is_voice"] = event.get("is_voice", False)
+        if "voice_blob" in event:
+            payload["voice_blob"] = event["voice_blob"]
 
-        print("📤 Sending:", message)
-
-        # Send to WebSocket
-        await self.send(text_data=json.dumps({
-            "message": message,
-            "is_voice": event.get("is_voice", False)
-        }))
+        await self.send(text_data=json.dumps(payload))
