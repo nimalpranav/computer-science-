@@ -1,218 +1,121 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Classroom with Voice</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f6fa;
-      color: #2f3640;
-      margin: 0;
-      padding: 0;
-    }
-
-    h1 {
-      text-align: center;
-      background: #40739e;
-      color: white;
-      padding: 20px;
-      margin: 0;
-    }
-
-    #chat-container {
-      max-width: 900px;
-      margin: 20px auto;
-      background: white;
-      border-radius: 10px;
-      padding: 20px;
-      box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
-    }
-
-    #chat-log {
-      width: 100%;
-      height: 200px;
-      padding: 10px;
-      border-radius: 5px;
-      border: 1px solid #dcdde1;
-      resize: none;
-      background: #f1f2f6;
-    }
-
-    #chat-message-input {
-      width: calc(100% - 180px);
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 5px;
-      border: 1px solid #dcdde1;
-    }
-
-    #chat-buttons button {
-      padding: 10px 15px;
-      margin-left: 5px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      background: #40739e;
-      color: white;
-      font-size: 14px;
-    }
-
-    #chat-buttons button:hover {
-      background: #2f3640;
-    }
-
-    #messages {
-      margin-top: 15px;
-    }
-
-    .voice-message {
-      margin: 10px 0;
-      background: #f1f2f6;
-      padding: 8px;
-      border-radius: 5px;
-      display: flex;
-      align-items: center;
-    }
-
-    .voice-message audio {
-      margin-left: 10px;
-    }
-
-    #start-voice {
-      margin-top: 15px;
-      width: 100%;
-      padding: 12px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      background: #44bd32;
-      color: white;
-      font-size: 16px;
-    }
-
-    #start-voice:hover {
-      background: #2f3640;
-    }
-
-    #remoteAudio {
-      width: 100%;
-      margin-top: 10px;
-    }
-  </style>
+  <title>Classroom</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h1>Classroom: {{ room_name }}</h1>
+<body class="bg-gray-100 text-gray-800 flex flex-col h-screen">
 
-  <div id="chat-container">
-    <!-- Text chat -->
-    <textarea id="chat-log" readonly></textarea><br>
+  <!-- Header -->
+  <header class="bg-indigo-600 text-white p-4 shadow-lg">
+    <h1 class="text-2xl font-bold">Classroom: {{ room_name }}</h1>
+  </header>
 
-    <div id="chat-buttons">
-      <input id="chat-message-input" type="text" placeholder="Type your message...">
-      <button id="chat-message-submit">Send</button>
-      <button id="chat-message-voice">🎙️ Record Voice</button>
-      <button id="clear-chat">🧹 Clear Chat</button>
-    </div>
+  <!-- Main content -->
+  <main class="flex flex-1 p-4 space-x-4">
 
-    <!-- Voice messages -->
-    <div id="messages"></div>
+    <!-- Chat Section -->
+    <section class="flex flex-col w-2/3 bg-white rounded-2xl shadow-lg p-4">
+      <h2 class="text-lg font-semibold mb-2">💬 Chat</h2>
+      
+      <div id="chat-log"
+        class="flex-1 w-full p-2 border rounded-lg mb-3 bg-gray-50 overflow-y-auto space-y-2">
+        <!-- Messages go here -->
+      </div>
 
-    <!-- Live voice chat -->
-    <button id="start-voice">🎤 Join Live Voice</button>
-    <audio id="remoteAudio" autoplay controls></audio>
-  </div>
+      <div class="flex space-x-2">
+        <input id="chat-message-input" type="text"
+          class="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          placeholder="Type a message...">
+        <button id="chat-message-submit"
+          class="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600">Send</button>
+        <button id="chat-message-voice"
+          class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600">TTS</button>
+        <button id="start-record"
+          class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">🎙️ Start</button>
+        <button id="stop-record"
+          class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">⏹️ Stop</button>
+      </div>
+    </section>
+
+    <!-- Voice Section -->
+    <section class="flex flex-col w-1/3 bg-white rounded-2xl shadow-lg p-4">
+      <h2 class="text-lg font-semibold mb-2">🎧 Live Voice</h2>
+      <button id="start-voice"
+        class="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 mb-4">Join Voice</button>
+      <audio id="remoteAudio" autoplay controls class="w-full"></audio>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-200 text-center p-2 text-sm">
+    Powered by Django + Channels + WebRTC
+  </footer>
 
   <script>
     const roomName = "{{ room_name }}";
-    const ws = new WebSocket('ws://' + window.location.host + '/ws/classroom/' + roomName + '/');
+    const ws = new WebSocket(
+      (window.location.protocol === "https:" ? "wss://" : "ws://") +
+      window.location.host +
+      "/ws/classroom/" + roomName + "/"
+    );
+
     const chatLog = document.querySelector('#chat-log');
     const messageInput = document.querySelector('#chat-message-input');
-    const messagesDiv = document.querySelector('#messages');
 
-    let pc = null;
-
-    // Load persisted chat
+    // Load old messages
     const savedChat = localStorage.getItem('chatLog_' + roomName);
-    if (savedChat) chatLog.value = savedChat;
+    if (savedChat) chatLog.innerHTML = savedChat;
 
-    function appendTextMessage(msg) {
-      chatLog.value += msg + '\n';
-      localStorage.setItem('chatLog_' + roomName, chatLog.value);
+    function appendMessage(html) {
+      const wrapper = document.createElement("div");
+      wrapper.innerHTML = html;
+      chatLog.appendChild(wrapper);
+      localStorage.setItem('chatLog_' + roomName, chatLog.innerHTML);
       chatLog.scrollTop = chatLog.scrollHeight;
     }
 
-    function appendVoiceMessage(blobData, sender = "🎤 Voice message:") {
-      const audio = new Audio(blobData);
-      audio.controls = true;
-      const div = document.createElement('div');
-      div.classList.add('voice-message');
-      div.textContent = sender + " ";
-      div.appendChild(audio);
-      messagesDiv.appendChild(div);
-      audio.play();
-    }
-
-    document.querySelector('#clear-chat').onclick = () => {
-    // Clear text chat
-    chatLog.value = '';
-    localStorage.removeItem('chatLog_' + roomName);
-
-    // Clear recorded voice messages
-    messagesDiv.innerHTML = '';
-};
-
-    ws.onmessage = async (e) => {
+    ws.onmessage = function(e) {
       const data = JSON.parse(e.data);
 
       if (data.message) {
-        appendTextMessage(data.message);
+        appendMessage(`<div class="p-2 bg-indigo-100 rounded">${data.message}</div>`);
         if (data.is_voice) {
-          const utterance = new SpeechSynthesisUtterance(data.message);
-          speechSynthesis.speak(utterance);
+          speechSynthesis.speak(new SpeechSynthesisUtterance(data.message));
         }
       }
 
       if (data.voice_blob) {
-        appendVoiceMessage(data.voice_blob);
-      }
-
-      if (data.offer) {
-        pc = createPeer();
-        await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-        ws.send(JSON.stringify({'answer': answer}));
-      }
-
-      if (data.answer && pc) {
-        await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-      }
-
-      if (data.candidate && pc) {
-        try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } 
-        catch (err) { console.error("Error adding ICE candidate:", err); }
+        const audioId = "audio-" + Date.now();
+        appendMessage(`
+          <div class="p-2 bg-green-100 rounded flex items-center space-x-2">
+            <span>🎙️ Voice Message:</span>
+            <audio id="${audioId}" controls src="${data.voice_blob}"></audio>
+          </div>
+        `);
       }
     };
 
-    function sendMessage(isVoice = false) {
-      const msg = messageInput.value.trim();
-      if (!msg) return;
-      ws.send(JSON.stringify({message: msg, is_voice: isVoice}));
-      messageInput.value = '';
+    function sendMessage(isVoice) {
+      const message = messageInput.value.trim();
+      if (!message) return;
+      ws.send(JSON.stringify({ message: message, is_voice: isVoice }));
+      messageInput.value = "";
     }
 
-    messageInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
+    document.querySelector('#chat-message-submit').onclick = () => sendMessage(false);
+    document.querySelector('#chat-message-voice').onclick = () => sendMessage(true);
+    messageInput.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         sendMessage(false);
       }
     });
 
-    document.querySelector('#chat-message-submit').onclick = () => sendMessage(false);
-
-    // Voice recording
+    // 🎤 Recording
     let mediaRecorder, audioChunks = [];
-    document.querySelector('#chat-message-voice').onclick = async () => {
+    document.querySelector('#start-record').onclick = async () => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaRecorder = new MediaRecorder(stream);
       audioChunks = [];
@@ -222,43 +125,38 @@
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
         const reader = new FileReader();
-        reader.readAsDataURL(audioBlob);
         reader.onloadend = () => {
-          ws.send(JSON.stringify({voice_blob: reader.result}));
-          appendVoiceMessage(reader.result, "You sent: ");
-        }
+          ws.send(JSON.stringify({ voice_blob: reader.result }));
+          console.log("📤 Sent recorded voice message");
+        };
+        reader.readAsDataURL(audioBlob);
       };
 
       mediaRecorder.start();
-      setTimeout(() => mediaRecorder.stop(), 3000);
+      console.log("🎙️ Recording started...");
     };
 
-    // Live voice chat
-    document.querySelector('#start-voice').onclick = async () => {
-      pc = createPeer();
+    document.querySelector('#stop-record').onclick = () => {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+        console.log("⏹️ Recording stopped.");
+      }
+    };
+
+    // 🔴 Live voice (WebRTC)
+    let pc = null;
+    document.querySelector('#start-voice').onclick = async function() {
+      pc = new RTCPeerConnection();
+      pc.onicecandidate = e => { if (e.candidate) ws.send(JSON.stringify({ candidate: e.candidate })); };
+      pc.ontrack = e => document.querySelector('#remoteAudio').srcObject = e.streams[0];
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      ws.send(JSON.stringify({ offer: offer }));
     };
-
-    function createPeer() {
-      const peer = new RTCPeerConnection();
-
-      peer.onicecandidate = event => {
-        if (event.candidate) ws.send(JSON.stringify({'candidate': event.candidate}));
-      };
-
-      peer.ontrack = event => {
-        document.querySelector('#remoteAudio').srcObject = event.streams[0];
-      };
-
-      peer.onnegotiationneeded = async () => {
-        const offer = await peer.createOffer();
-        await peer.setLocalDescription(offer);
-        ws.send(JSON.stringify({'offer': offer}));
-      };
-
-      return peer;
-    }
   </script>
 </body>
 </html>
