@@ -24,10 +24,10 @@ def login_view(request):
             return redirect("dashboard")
     else:
         form = AuthenticationForm()
-    return render(request, "login.html", {"form": form})
-
+    return render(request, "students/login.html", {"form": form})
 @login_required
 def dashboard(request):
     tasks = Task.objects.all()
     submissions = Submission.objects.filter(student=request.user)
     return render(request, "dashboard.html", {"tasks": tasks, "submissions": submissions})
+
