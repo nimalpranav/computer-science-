@@ -1,77 +1,95 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Classroom</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classroom</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 min-h-screen flex flex-col items-center p-6">
 
-<h2>Chat</h2>
-<input id="msg" placeholder="Type message">
-<button onclick="sendMsg()">Send</button>
-<div id="chat"></div>
+  <div class="w-full max-w-2xl bg-white shadow-lg rounded-xl p-6 space-y-6">
+    <h1 class="text-3xl font-bold text-center text-indigo-700">Classroom Chat</h1>
 
-<hr>
+    <!-- Text Chat -->
+    <div class="space-y-2">
+      <h2 class="text-xl font-semibold text-gray-700">Chat</h2>
+      <div id="chat" class="h-64 overflow-y-auto border rounded-lg p-3 bg-gray-50 shadow-inner"></div>
+      <div class="flex gap-2 mt-2">
+        <input id="msg" placeholder="Type message" class="flex-1 border rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+        <button onclick="sendMsg()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">Send</button>
+      </div>
+    </div>
 
-<h2>Voice Chat</h2>
-<button onclick="joinVoice()">Join Voice</button>
+    <hr class="border-gray-300">
 
-<script>
-const roomId = "{{ room.id }}";
-const ws = new WebSocket(
-  (location.protocol === "https:" ? "wss://" : "ws://") +
-  location.host +
-  "/ws/classroom/" + roomId + "/"
-);
+    <!-- Voice Chat -->
+    <div class="space-y-2">
+      <h2 class="text-xl font-semibold text-gray-700">Voice Chat</h2>
+      <button onclick="joinVoice()" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition">Join Voice</button>
+    </div>
+  </div>
 
-let pc;
+  <script>
+    const roomId = "{{ room.id }}";
+    const ws = new WebSocket(
+      (location.protocol === "https:" ? "wss://" : "ws://") +
+      location.host +
+      "/ws/classroom/" + roomId + "/"
+    );
 
-ws.onmessage = async (e) => {
-  const data = JSON.parse(e.data);
+    let pc;
 
-  if (data.message) {
-    document.getElementById("chat").innerHTML += `<p>${data.message}</p>`;
-  }
+    ws.onmessage = async (e) => {
+      const data = JSON.parse(e.data);
 
-  if (data.offer) {
-    await pc.setRemoteDescription(data.offer);
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    ws.send(JSON.stringify({ answer }));
-  }
+      if (data.message) {
+        const chatDiv = document.getElementById("chat");
+        chatDiv.innerHTML += `<p class="p-1 bg-indigo-100 rounded my-1">${data.message}</p>`;
+        chatDiv.scrollTop = chatDiv.scrollHeight; // Auto scroll
+      }
 
-  if (data.answer) {
-    await pc.setRemoteDescription(data.answer);
-  }
+      if (data.offer) {
+        await pc.setRemoteDescription(data.offer);
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        ws.send(JSON.stringify({ answer }));
+      }
 
-  if (data.candidate) {
-    await pc.addIceCandidate(data.candidate);
-  }
-};
+      if (data.answer) {
+        await pc.setRemoteDescription(data.answer);
+      }
 
-function sendMsg() {
-  const msg = document.getElementById("msg").value;
-  ws.send(JSON.stringify({ message: msg }));
-  document.getElementById("msg").value = "";
-}
+      if (data.candidate) {
+        await pc.addIceCandidate(data.candidate);
+      }
+    };
 
-async function joinVoice() {
-  pc = new RTCPeerConnection();
-
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  stream.getTracks().forEach(track => pc.addTrack(track, stream));
-
-  pc.onicecandidate = e => {
-    if (e.candidate) {
-      ws.send(JSON.stringify({ candidate: e.candidate }));
+    function sendMsg() {
+      const msg = document.getElementById("msg").value;
+      if(msg.trim() === "") return;
+      ws.send(JSON.stringify({ message: msg }));
+      document.getElementById("msg").value = "";
     }
-  };
 
-  const offer = await pc.createOffer();
-  await pc.setLocalDescription(offer);
-  ws.send(JSON.stringify({ offer }));
-}
-</script>
+    async function joinVoice() {
+      pc = new RTCPeerConnection();
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+      pc.onicecandidate = e => {
+        if (e.candidate) {
+          ws.send(JSON.stringify({ candidate: e.candidate }));
+        }
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      ws.send(JSON.stringify({ offer }));
+      alert("Voice chat joined! Speak now.");
+    }
+  </script>
 
 </body>
-</html>
+</html></html>
