@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Classroom</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+
+<h2>Chat</h2>
+<input id="msg" placeholder="Type message">
+<button onclick="sendMsg()">Send</button>
+<div id="chat"></div>
+
+<hr>
+
+<h2>Voice Chat</h2>
+<button onclick="joinVoice()">Join Voice</button>
+
+<script>
+const roomId = "{{ room.id }}";
+const ws = new WebSocket(
+  (location.protocol === "https:" ? "wss://" : "ws://") +
+  location.host +
+  "/ws/classroom/" + roomId + "/"
+);
+
+let pc;
+
+ws.onmessage = async (e) => {
+  const data = JSON.parse(e.data);
+
+  if (data.message) {
+    document.getElementById("chat").innerHTML += `<p>${data.message}</p>`;
+  }
+
+  if (data.offer) {
+    await pc.setRemoteDescription(data.offer);
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    ws.send(JSON.stringify({ answer }));
+  }
+
+  if (data.answer) {
+    await pc.setRemoteDescription(data.answer);
+  }
+
+  if (data.candidate) {
+    await pc.addIceCandidate(data.candidate);
+  }
+};
+
+function sendMsg() {
+  const msg = document.getElementById("msg").value;
+  ws.send(JSON.stringify({ message: msg }));
+  document.getElementById("msg").value = "";
+}
+
+async function joinVoice() {
+  pc = new RTCPeerConnection();
+
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  stream.getTracks().forEach(track => pc.addTrack(track, stream));
+
+  pc.onicecandidate = e => {
+    if (e.candidate) {
+      ws.send(JSON.stringify({ candidate: e.candidate }));
+    }
+  };
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  ws.send(JSON.stringify({ offer }));
+}
+</script>
+
+</body>
+</html>
